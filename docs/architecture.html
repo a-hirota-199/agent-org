@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-org — 組織と、組織を動かす仕組み</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --paper-2: #f5f4ed;
+    --ink: #1c1917;
+    --muted: #52534e;
+    --accent: #b5523a;
+    --coral: #f7591f;
+    --link: #1a70c7;
+    --hairline: #e0dbd2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 64px 32px 96px; }
+  h1, h2 {
+    font-family: "Instrument Serif", Georgia, "Times New Roman", "Yu Mincho", serif;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  h1 { font-size: 34px; letter-spacing: 0.01em; }
+  h2 { font-size: 23px; margin: 0 0 16px; }
+  .lead { color: var(--muted); margin-top: 8px; font-size: 15px; }
+  section { border-top: 1px solid var(--hairline); margin-top: 48px; padding-top: 40px; }
+  .kicker {
+    font-size: 12px; letter-spacing: 0.12em; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  p { margin-bottom: 12px; }
+  .note { color: var(--muted); font-size: 13px; }
+  code, .mono {
+    font-family: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+  }
+  code { background: var(--paper-2); border: 1px solid var(--hairline); border-radius: 4px; padding: 1px 6px; }
+  pre {
+    background: var(--paper-2); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 16px 20px; overflow-x: auto; margin: 16px 0;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th {
+    text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.06em;
+    color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--ink);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  td.mono { white-space: nowrap; }
+  .figure { background: var(--paper-2); border: 1px solid var(--hairline); border-radius: 10px; padding: 24px; margin: 16px 0; overflow-x: auto; }
+  .figure figcaption { color: var(--muted); font-size: 13px; margin-top: 12px; text-align: center; }
+  svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 16px 0; }
+  .flow .step {
+    background: var(--paper-2); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 12px 16px; flex: 1 1 136px; min-width: 136px; font-size: 13.5px; line-height: 1.6;
+  }
+  .flow .step b { display: block; font-size: 12px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 4px; }
+  .flow .arrow { align-self: center; color: var(--coral); font-size: 16px; flex: 0 0 auto; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin: 16px 0; }
+  .card { border: 1px solid var(--hairline); border-radius: 10px; padding: 20px 24px; background: var(--paper-2); }
+  .card h3 { font-size: 15px; margin-bottom: 4px; }
+  .card .use { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .card .shape { font-family: "Geist Mono", ui-monospace, monospace; font-size: 13px; color: var(--ink); }
+  ul { padding-left: 20px; margin: 8px 0 12px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--link); text-decoration: none; }
+  footer { border-top: 1px solid var(--hairline); margin-top: 64px; padding-top: 24px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <div class="kicker">agent-org / architecture</div>
+    <h1>組織と、組織を動かす仕組み</h1>
+    <p class="lead">移植可能なエージェント組織の設計サマリ。リポジトリ1つが「組織」であり、cloneと起動コマンド1行でどの環境でも同じ組織が立ち上がる。</p>
+  </header>
+
+  <section>
+    <h2>1. 組織のかたち（標準3層）</h2>
+    <p>上司 <code>manager</code> がユーザの窓口。中間管理職 <code>lead</code> が実働の <code>worker</code> を束ねる。同じ役割定義から複数人を並列起動できる。</p>
+    <div class="figure">
+      <svg viewBox="0 0 800 328" width="800" height="328" role="img" aria-label="組織図">
+        <defs>
+          <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#52534e"/>
+          </marker>
+        </defs>
+        <!-- user -->
+        <rect x="336" y="8" width="128" height="36" rx="8" fill="none" stroke="#52534e" stroke-dasharray="4 4"/>
+        <text x="400" y="31" text-anchor="middle" font-size="14" fill="#52534e">ユーザ</text>
+        <line x1="400" y1="44" x2="400" y2="80" stroke="#52534e" marker-end="url(#ah)"/>
+        <text x="412" y="68" font-size="11" fill="#52534e">依頼 / 報告</text>
+        <!-- manager -->
+        <rect x="320" y="84" width="160" height="48" rx="8" fill="#faf7f2" stroke="#b5523a" stroke-width="1.5"/>
+        <text x="400" y="105" text-anchor="middle" font-size="14" font-weight="600" fill="#1c1917">manager</text>
+        <text x="400" y="122" text-anchor="middle" font-size="11" fill="#52534e">--agent で起動・唯一の窓口</text>
+        <!-- lines to children -->
+        <line x1="400" y1="132" x2="184" y2="184" stroke="#52534e" marker-end="url(#ah)"/>
+        <line x1="400" y1="132" x2="400" y2="184" stroke="#52534e" marker-end="url(#ah)"/>
+        <line x1="400" y1="132" x2="616" y2="184" stroke="#52534e" marker-end="url(#ah)"/>
+        <!-- leads -->
+        <rect x="112" y="188" width="144" height="40" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="184" y="213" text-anchor="middle" font-size="13" fill="#1c1917">lead-A</text>
+        <rect x="328" y="188" width="144" height="40" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="400" y="213" text-anchor="middle" font-size="13" fill="#1c1917">lead-B</text>
+        <rect x="544" y="188" width="144" height="40" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="616" y="206" text-anchor="middle" font-size="13" fill="#1c1917">worker</text>
+        <text x="616" y="221" text-anchor="middle" font-size="10" fill="#52534e">小案件は manager 直轄</text>
+        <!-- workers -->
+        <line x1="184" y1="228" x2="184" y2="264" stroke="#52534e" marker-end="url(#ah)"/>
+        <line x1="400" y1="228" x2="400" y2="264" stroke="#52534e" marker-end="url(#ah)"/>
+        <rect x="112" y="268" width="144" height="36" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="184" y="291" text-anchor="middle" font-size="13" fill="#1c1917">worker ×N</text>
+        <rect x="328" y="268" width="144" height="36" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="400" y="291" text-anchor="middle" font-size="13" fill="#1c1917">worker ×N</text>
+        <text x="400" y="324" text-anchor="middle" font-size="11" fill="#52534e">同一定義から複数を並列起動（人数は起動数で調整）／ 階層の仕様上限は main＋5層</text>
+      </svg>
+    </div>
+    <ul>
+      <li>部下同士は直接通信しない。<b>連携は上司経由、データはファイル経由</b></li>
+      <li>部下を持てるかは役割定義の <code>tools</code>（Agent の有無）で構造的に制御する</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. 組織の解剖 — ファイルが制度そのもの</h2>
+    <p>組織の実体はすべてプレーンファイル。だから git で持ち運べ、編集すれば組織が変わる。</p>
+    <table>
+      <tr><th>制度（メタファー）</th><th>実体</th><th>役割</th></tr>
+      <tr><td>就業規則</td><td class="mono">CLAUDE.md</td><td>行動規範・情報共有規約・成長の規律・不可侵領域</td></tr>
+      <tr><td>職務記述書</td><td class="mono">.claude/agents/*.md</td><td>manager／lead／worker の役割・使えるツール</td></tr>
+      <tr><td>業務マニュアル</td><td class="mono">.claude/skills/</td><td>動員パターン4種＋意思決定の記録手順</td></tr>
+      <tr><td>定型業務</td><td class="mono">.claude/workflows/</td><td>繰り返す仕事の固定手順（運用で追加）</td></tr>
+      <tr><td>権限規程</td><td class="mono">.claude/settings.json</td><td>permissions（allow／deny）</td></tr>
+      <tr><td>経験ノート</td><td class="mono">knowledge/&lt;役割&gt;.md</td><td>振り返りで得た学びの蓄積（git管理＝学習成果ごと移植）</td></tr>
+      <tr><td>取引先リスト</td><td class="mono">.mcp.json ＋ .env</td><td>外部接続の定義。認証だけ環境変数で注入</td></tr>
+      <tr><td>作業場</td><td class="mono">work/</td><td>案件ごとの成果物置き場（git管理外・書き捨て）</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. 仕事の流れ（タスク駆動）</h2>
+    <p>ユーザはお題を渡すだけ。パターン選択は manager の職務で、選択と理由を宣言してから動く（明示指定があればそれが最優先）。</p>
+    <div class="flow">
+      <div class="step"><b>1 依頼</b>ユーザがお題を渡す</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2 宣言</b>manager が動員パターンと理由を宣言</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3 実行</b>部下を並列起動。成果物は <span class="mono">work/</span> へ</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4 報告</b>要約5行＋ファイルパスで上へ</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>5 集約</b>manager が検品し、結論ファーストで報告</div>
+    </div>
+    <ul>
+      <li>並列作業は書き込み先を worker 毎に分離（衝突防止）</li>
+      <li>前工程の成果が要るときは、上司が指示に<b>パスを含めて</b>渡す（又聞き禁止）</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. 動員パターン（4種のメニュー）</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>fan-out 並列</h3>
+        <div class="use">同質の作業が大量にあるとき（一括レビュー・網羅調査）</div>
+        <div class="shape">上司 ─┬→ worker ×N（分担して同時に）</div>
+      </div>
+      <div class="card">
+        <h3>パイプライン</h3>
+        <div class="use">前工程の成果が次の入力になるとき（調査→設計→実装）</div>
+        <div class="shape">01-調査 → 02-設計 → 03-実装（パスで受け渡し）</div>
+      </div>
+      <div class="card">
+        <h3>レビュー役付き</h3>
+        <div class="use">品質担保が必要な成果物（納品物・対外文書）</div>
+        <div class="shape">作業者 → draft → 検査役 →（差し戻し≦2回）</div>
+      </div>
+      <div class="card">
+        <h3>競作</h3>
+        <div class="use">正解が一つでない仕事（企画・設計・命名）</div>
+        <div class="shape">案A / 案B / 案C → 評価基準で比較 → 採用</div>
+      </div>
+    </div>
+    <p class="note">迷ったらコストの低い順（fan-out → パイプライン → レビュー役付き → 競作）に検討する。定型化した仕事は workflows に焼き込み、選択自体を不要にする。</p>
+  </section>
+
+  <section>
+    <h2>5. 成長の仕組み（自己成長ループ）</h2>
+    <p>振り返りは行事ではなく<b>全エージェントの作業単位の職務</b>。学びはファイルに書かれ、コミットとして歴史に残る。</p>
+    <div class="figure">
+      <svg viewBox="0 0 800 184" width="800" height="184" role="img" aria-label="成長ループ">
+        <defs>
+          <marker id="ah2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#52534e"/>
+          </marker>
+          <marker id="ah3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#f7591f"/>
+          </marker>
+        </defs>
+        <rect x="8" y="48" width="136" height="48" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="76" y="76" text-anchor="middle" font-size="13" fill="#1c1917">作業する</text>
+        <line x1="144" y1="72" x2="168" y2="72" stroke="#52534e" marker-end="url(#ah2)"/>
+        <rect x="172" y="48" width="136" height="48" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="240" y="70" text-anchor="middle" font-size="13" fill="#1c1917">締めに振り返る</text>
+        <text x="240" y="86" text-anchor="middle" font-size="10" fill="#52534e">毎作業・自律で</text>
+        <line x1="308" y1="72" x2="332" y2="72" stroke="#52534e" marker-end="url(#ah2)"/>
+        <rect x="336" y="48" width="136" height="48" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="404" y="70" text-anchor="middle" font-size="13" fill="#1c1917">学びを記録</text>
+        <text x="404" y="86" text-anchor="middle" font-size="10" fill="#52534e">knowledge/ へ追記</text>
+        <line x1="472" y1="72" x2="496" y2="72" stroke="#52534e" marker-end="url(#ah2)"/>
+        <rect x="500" y="48" width="136" height="48" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="568" y="70" text-anchor="middle" font-size="13" fill="#1c1917">改善を申告</text>
+        <text x="568" y="86" text-anchor="middle" font-size="10" fill="#52534e">報告に同乗 → 承認ゲート</text>
+        <line x1="636" y1="72" x2="660" y2="72" stroke="#52534e" marker-end="url(#ah2)"/>
+        <rect x="664" y="48" width="128" height="48" rx="8" fill="#faf7f2" stroke="#1c1917"/>
+        <text x="728" y="70" text-anchor="middle" font-size="13" fill="#1c1917">改訂・コミット</text>
+        <text x="728" y="86" text-anchor="middle" font-size="10" fill="#52534e">learn: / feat:</text>
+        <path d="M 728 96 L 728 144 L 76 144 L 76 96" fill="none" stroke="#f7591f" marker-end="url(#ah3)"/>
+        <text x="400" y="136" text-anchor="middle" font-size="11" fill="#f7591f">次の作業から適用される（組織が変わる）</text>
+      </svg>
+    </div>
+    <table>
+      <tr><th>層</th><th>変わるもの</th><th>承認</th><th>コミット</th></tr>
+      <tr><td><b>記憶</b></td><td>knowledge/（経験ノート）への追記</td><td>自動でよい</td><td class="mono">learn:</td></tr>
+      <tr><td><b>手順</b></td><td>既存 skills の改訂</td><td>manager の裁量</td><td class="mono">learn:</td></tr>
+      <tr><td><b>構造</b></td><td>agents 増設・skills 新規追加・就業規則の改定</td><td><b>ユーザ承認</b></td><td class="mono">feat:</td></tr>
+    </table>
+    <ul>
+      <li><b>不可侵領域</b>：settings.json の deny／情報共有規約／承認ゲート規定は、エージェント編集禁止（変更はユーザのみ）。自己編集のドリフトに対する歯止め</li>
+      <li><b>肥大化対策</b>：経験ノートが100行を超えたら manager が蒸留する</li>
+      <li><b>巻き戻し</b>：git 履歴が成長の記録。悪化した進化は revert で戻せる</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. 記録の規約</h2>
+    <table>
+      <tr><th>prefix</th><th>用途</th></tr>
+      <tr><td class="mono">feat:</td><td>組織の拡張（役割・skill・workflow の追加、構造変更。ユーザ承認済み）</td></tr>
+      <tr><td class="mono">fix:</td><td>誤り・不具合の修正</td></tr>
+      <tr><td class="mono">learn:</td><td>振り返り由来の改訂（経験ノート追記・既存 skills の改善）</td></tr>
+      <tr><td class="mono">human:</td><td>README など人間向け文書のみの変更</td></tr>
+      <tr><td class="mono">chore:</td><td>設定・整理などその他</td></tr>
+    </table>
+    <p class="note">git 操作は manager 専任（並列コミットの衝突防止）。コミットログを見れば「誰の権限で組織が変わったか」を追える。重要な意思決定は decision-log skill の形式（結論＋理由をトップレベルに、経緯は検討ログに分離）で記録する。</p>
+  </section>
+
+  <section>
+    <h2>7. 移植の仕組み</h2>
+    <pre><code>git clone &lt;このリポジトリ&gt; &amp;&amp; cd agent-org
+cp .env.example .env       # 必要な認証情報を設定
+claude --agent manager     # 組織が立ち上がる</code></pre>
+    <table>
+      <tr><th>持ち運ばれるもの</th><th>移植先で用意するもの</th></tr>
+      <tr>
+        <td>役割定義・就業規則・業務マニュアル・権限規程・<b>経験ノート（学習成果）</b>・git履歴（成長の記録）</td>
+        <td>認証情報（<span class="mono">.env</span>）／個人設定（<span class="mono">settings.local.json</span>・git管理外）</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>8. 関連システム — 観察ゲーム</h2>
+    <p>この組織を舞台に、エージェントの働き・成長を「神の目」で観察するゲームを別途構築予定。観察層は組織本体に手を入れず上から被せる（hooks は <span class="mono">settings.local.json</span> 側に注入、日報の原料はゲーム側でアーカイブ）。</p>
+  </section>
+
+  <section>
+    <h2>参照</h2>
+    <ul>
+      <li><span class="mono">README.md</span> — 使い方・役割の増やし方（このリポジトリ）</li>
+      <li><span class="mono">my_knowledge/ideas/移植可能なエージェント組織.md</span> — 設計の決定事項と理由</li>
+      <li><span class="mono">my_knowledge/ideas/移植可能なエージェント組織-検討ログ.md</span> — 検討の経緯</li>
+    </ul>
+  </section>
+
+  <footer>2026-07-05 時点の設計（論点A〜D 確定・実装済み）</footer>
+
+</main>
+</body>
+</html>
