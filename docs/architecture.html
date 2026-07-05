@@ -146,6 +146,7 @@
       <tr><td>経験ノート</td><td class="mono">knowledge/&lt;役割&gt;.md</td><td>振り返りで得た学びの蓄積（git管理＝学習成果ごと移植）</td></tr>
       <tr><td>取引先リスト</td><td class="mono">.mcp.json ＋ .env</td><td>外部接続の定義。認証だけ環境変数で注入</td></tr>
       <tr><td>作業場</td><td class="mono">work/</td><td>案件ごとの成果物置き場（git管理外・書き捨て）</td></tr>
+      <tr><td>内心メモ</td><td class="mono">work/&lt;役割&gt;-memo.md</td><td>作業中の思考・本音の自己申告（観察用。成果物・報告には含めない）</td></tr>
     </table>
   </section>
 
@@ -273,7 +274,7 @@ claude --agent manager     # 組織が立ち上がる</code></pre>
 
   <section>
     <h2>8. 関連システム — 観察ゲーム</h2>
-    <p>この組織を舞台に、エージェントの働き・成長を「神の目」で観察するゲームを別途構築予定。観察層は組織本体に手を入れず上から被せる（hooks は <span class="mono">settings.local.json</span> 側に注入、日報の原料はゲーム側でアーカイブ）。</p>
+    <p>この組織を舞台に、エージェントの働き・成長を「神の目」で観察するゲームを別途構築予定。組織側は内心メモ規約を実装済み。観察層は組織本体に手を入れず上から被せる（hooks は <span class="mono">settings.local.json</span> 側に注入、日報の原料＝成果物と内心メモは git 管理外のためゲーム側でアーカイブ）。</p>
   </section>
 
   <section>
