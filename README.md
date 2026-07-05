@@ -10,6 +10,9 @@ cp .env.example .env       # 必要な認証情報があれば設定
 claude --agent manager     # 上司をメインセッションとして起動
 ```
 
+> **初回のみ**：起動時に表示される workspace trust ダイアログを承認すること。
+> 未承認だと `.claude/settings.json` の権限（allow）が無効化され、部下が成果物を書けずに止まる。
+
 ## 組織構成（標準3層）
 
 ```
