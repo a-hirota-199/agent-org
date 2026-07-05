@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="assets/agent-org-lockup-light.png" alt="agent-org" width="420">
+</p>
+
 # agent-org — 移植可能なエージェント組織
 
 ファイル一式で持ち運べる「エージェントの組織」。clone して起動コマンド1行で、上司（manager）＋部下（lead／worker）の組織がどの環境でも立ち上がる。
+
+https://github.com/user-attachments/assets/cb99177f-272c-4071-8b22-1c36e4356e14
 
 ## 起動方法
 
