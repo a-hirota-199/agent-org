@@ -1,0 +1,5 @@
+.env
+work/*
+!work/.gitkeep
+.claude/settings.local.json
+CLAUDE.local.md
